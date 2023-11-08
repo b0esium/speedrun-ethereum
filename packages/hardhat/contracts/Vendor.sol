@@ -5,7 +5,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./YourToken.sol";
 
 contract Vendor is Ownable {
-  // event BuyTokens(address buyer, uint256 amountOfETH, uint256 amountOfTokens);
+  event BuyTokens(address buyer, uint256 amountOfETH, uint256 amountOfTokens);
+  event SellTokens(address seller, uint256 amountOfTokens, uint256 amountOfETH);
 
   YourToken public yourToken;
 
@@ -13,9 +14,22 @@ contract Vendor is Ownable {
     yourToken = YourToken(tokenAddress);
   }
 
-  // ToDo: create a payable buyTokens() function:
 
-  // ToDo: create a withdraw() function that lets the owner withdraw ETH
+  uint256 public constant tokensPerEth = 100;
 
-  // ToDo: create a sellTokens(uint256 _amount) function:
+  function buyTokens() public payable {
+    yourToken.transfer(msg.sender, msg.value * 100);
+    emit BuyTokens(msg.sender, msg.value, msg.value * 100);
+  }
+
+  function withdraw() public onlyOwner {
+    (bool success, ) = payable(msg.sender).call{value: address(this).balance}("");
+  }
+
+  function sellTokens(uint256 amount) public {
+    require(yourToken.balanceOf(msg.sender) >= amount, "You do not have enough tokens");
+    yourToken.transferFrom(msg.sender, address(this), amount);
+    (bool success, ) = payable(msg.sender).call{value: amount / 100}("");
+    emit SellTokens(msg.sender, amount, amount / 100);
+  }
 }
